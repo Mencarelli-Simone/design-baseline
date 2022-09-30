@@ -7,6 +7,7 @@ import numpy as np
 from numba import jit, prange
 from scipy import integrate
 from radartools.farField import UniformAperture
+from design_functions import pd_from_nesz_res
 
 
 ## Geometry Class simplified for spherical geometry ##
@@ -346,7 +347,7 @@ def mesh_incidence_azimuth_to_gcs(incidence_mesh, azimuth_mesh, lambda_c, v_s, h
     # cosine of earth-centric elevation angle of azimuth circle parallel to the orbital plane on the sphere
     cos_theta_e = (re + R0_mesh * cos(incidence_mesh)) / (re + h)
     # elevation coordinate of point
-    theta_e = np.arccos(cos_theta_e)
+    theta_e = np.arccos(cos_theta_e) * np.sign(incidence_mesh) # to consider also incidence angles behind nadir
     # azimuth angle coordinate
     theta_a = azimuth_mesh / (re * cos_theta_e)
     # x coordinate mesh
@@ -439,14 +440,14 @@ def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidenc
             looking_angle) ** 2 * h ** 2 - h ** 2)
     cos_theta_i = - (-(re + h) ** 2 + re ** 2 + r0 ** 2) / (2 * r0 * re)
     theta_i = np.arccos(cos_theta_i)
-    #print(looking_angle*180/np.pi)
-    #print(theta_i*180/np.pi)
+    # print(looking_angle*180/np.pi)
+    # print(theta_i*180/np.pi)
 
     # 1 Doppler Bandwidth
     Bd = nominal_doppler_bandwidth(uniap.L, theta_i, lambda_c, v_s, h)
-    #print(Bd)
-    #print(v_s)
-    #print(lambda_c)
+    # print(Bd)
+    # print(v_s)
+    # print(lambda_c)
     # 2 doppler axis
     doppler = np.linspace(-Bd / 2, Bd / 2, 513)
 
@@ -472,7 +473,7 @@ def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidenc
     # the matched filter amplitude
     H = 1 / (stationary_phase_amplitude_multiplier(I, Tk, lambda_c, v_s, h) * Gain)
     w_range = integrate.simps(H ** 2, D, axis=0)
-    #print(w_range)
+    # print(w_range)
     # 6 Core SNR equation
     # Boltzman constant
     k_boltz = 1.380649E-23  # J/K
@@ -481,15 +482,17 @@ def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidenc
     # The range at each ground range point
     r0 = re * (np.sqrt(cos(incidence) ** 2 + 2 * h / re + h ** 2 / re ** 2) - cos(incidence))
     max_gain = uniap.max_gain()
-    #print(max_gain)
+    # print(max_gain)
     vg = v_s / (re + h) * re * cos_theta_e[0, :]
     # the equation is then: (equivalent to the above, just simplified)
-    SNR_core = lambda_c ** 2 * max_gain ** 2 * c * Bd * vg / (128 * np.pi ** 3 * r0 ** 4 * k_boltz * sin_theta_i * w_range)
+    SNR_core = lambda_c ** 2 * max_gain ** 2 * c * Bd * vg / (
+            128 * np.pi ** 3 * r0 ** 4 * k_boltz * sin_theta_i * w_range)
 
     # azimuth resolutions
     daz = vg / Bd
 
     return SNR_core, daz
+
 
 def snr_error(beta, theta_ne, theta_fe, radarGeo: RadarGeometry, uniAp: UniformAperture):
     """
@@ -513,4 +516,41 @@ def snr_error(beta, theta_ne, theta_fe, radarGeo: RadarGeometry, uniAp: UniformA
     SNR_core, daz = core_snr_spherical(radarGeo, uniAp, incidence, wavel, v_s, h)
     # 5 Error
     e = SNR_core[1] - SNR_core[0]
+    return e
+
+
+def pd_error(beta, theta_ne, theta_fe, radarGeo: RadarGeometry, uniAp: UniformAperture, C_multiplier, B, pfa, aship,
+             mean, var, c=299792458.0):
+    """
+    error proportional to the asymmetry between snr at ne and at fe given points
+
+    :param beta: radar Looking Angle [radians]
+    :param theta_ne: incidence angle Near End [radians]
+    :param theta_fe: incidence angle Far End [radians]
+    :param radarGeo:  radarGeometry object
+    :param uniAp:  uniform aperture object
+    :param C_multiplier: Nesz = C_multiplier / coreSNR
+    :param B: noise bandwidth
+    :param pfa: Probability of false alarm
+    :param aship: ship area
+    :param c: optional, default speed of light
+    :return: error to be minimized
+    """
+    # 1 start finding the nesz
+    incidence = np.array([theta_ne, theta_fe])
+    # 2 radar object
+    radarGeo.set_rotation(beta, 0, 0)
+    # 3 parameters
+    wavel = uniAp.c / uniAp.freq
+    v_s = radarGeo.orbital_speed()
+    h = radarGeo.S_0[2]
+    # 4 SNR core
+    SNR_core, daz = core_snr_spherical(radarGeo, uniAp, incidence, wavel, v_s, h)
+    # 5 NESZ
+    nesz = C_multiplier / SNR_core
+    # 6 pd
+    acell = daz * c / (2 * sin(incidence) * B)
+    Pd = pd_from_nesz_res(nesz, acell, pfa, aship, mean, var)
+    # 5 Error
+    e = Pd[0] - Pd[1]
     return e

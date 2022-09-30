@@ -80,8 +80,8 @@ def time_diagram_plotter(ax, prf, dutycycle, h=500e3, re=6371e3, c=299792458):
     :param c: optional default speed of light
     :return:
     """
-    nadir_return_plotter_rg(ax, h, prf[0], prf[-1])
-    n = np.arange(0, 60)
+    nadir_return_plotter_rg(ax, h, prf[0], prf[-1], prf_resolution=5)
+    n = np.arange(0, 200)
     transmit_events = range_transmit_event(n, dutycycle, prf)
     # conversion to ground range
     transmit_events_rg = []

@@ -7,6 +7,7 @@ import numpy
 from numpy import arctan, tan, sin, cos, vectorize, arctan2, arccos
 import numpy as np
 from scipy.optimize import fsolve
+from scipy.special import erf
 
 
 # RANGE FROM INCIDENCE ANGLE #
@@ -26,8 +27,6 @@ def range_from_theta(Theta, h=500e3, re=6371e3):
     rg = arccos((re + r * cos(theta)) / (re + h)) * re
     # # finally return all
     return r, rg
-
-
 
 
 # ground range from slant range:
@@ -141,3 +140,18 @@ def closest_nadir_null(pri, rne, h=500e3, c=299792458):
     # Just need the broadside and in degs
     theta_1 = (theta_1[0] + theta_1[-1]) * 180 / (2 * np.pi)
     return theta_1, pri1, ground_swath_2
+
+
+def pd_from_nesz_res(nesz, acell, pfa, aship, mean, var):
+    """
+    compute the probability of detection given, resolution area, probability of false alarm, ship area and log normal distribution properties
+    :param nesz: Noise equivalent sigma zero
+    :param acell: resolution area on ground
+    :param pfa: Probability of false alarm
+    :param aship: ship area
+    :return: pd
+    """
+    Thresh = - nesz * np.log(pfa * acell / aship)
+    # Probability of detection
+    Pd = 1 - (1 / 2 + 1 / 2 * erf((np.log(Thresh) - mean) / (np.sqrt(2 * var)))) ** (aship / acell)
+    return Pd
