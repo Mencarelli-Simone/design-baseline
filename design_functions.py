@@ -120,11 +120,11 @@ def pri_max_swath(theta, wa, freq=10e9, c=299792458, nefe=False, slant=False):
 
 
 # closest valid point in the timing diagram for nadir return suppression
-def closest_nadir_null(pri, rne, h=500e3, c=299792458):
+def closest_nadir_null(pri, rne, h=500e3, c=299792458, end='near'):
     """
     corrects theta, the swath and pri to the closest valid point
     :param pri: current Pulse Repetition Intervall
-    :param rne: current SLANT range Near end value
+    :param rne: current SLANT range Near end or far end value
     :param h: optional, satellite height, default 500km
     :param c: optional, default speed of light
     :return: theta', pri', ground_swath= [R_ne',R_fa']
@@ -134,6 +134,8 @@ def closest_nadir_null(pri, rne, h=500e3, c=299792458):
     pri1 = h * 2 / (m * c)
     # 2 find closest valid near end range at that PRI
     n = int(np.round(2 * rne / (pri1 * c)))
+    if end == 'far':
+        n = int(np.round(2 * rne / (pri1 * c))) - 1
     slant_swath_2 = np.array([n * pri1 * c / 2, (n + 1) * pri1 * c / 2])
     # 3 convert to theta and ground range
     ground_swath_2, theta_1 = range_slant_to_ground(slant_swath_2, h)
