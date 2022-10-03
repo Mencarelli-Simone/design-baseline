@@ -155,3 +155,13 @@ def pd_from_nesz_res(nesz, acell, pfa, aship, mean, var):
     # Probability of detection
     Pd = 1 - (1 / 2 + 1 / 2 * erf((np.log(Thresh) - mean) / (np.sqrt(2 * var)))) ** (aship / acell)
     return Pd
+
+def find_bandwidth(La, Theta, Ares, c=299792458):
+    """
+    design equation for bandwidth selection
+    :param La: Antenna length
+    :param Theta: incidence angle in degrees
+    :param Ares: Resolution Area
+    :return: Bandwidth
+    """
+    return c * La / (4 * np.sin(Theta * np.pi / 180) * Ares)

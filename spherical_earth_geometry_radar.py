@@ -397,7 +397,7 @@ def nominal_doppler_bandwidth(antenna_length, incidence_angle, lambda_c, v_s, h=
 def incidence_angle_to_looking_angle(incidence_angle, h=500e3, re=6371e3):
     """
 
-    :param incidence_angle: broadside incidence angle
+    :param incidence_angle: broadside incidence angle radians
     :param h: optional, satellite height from ground, default 500 km
     :param re: optional, spherical earth radius, default 6371 km
     :return:
