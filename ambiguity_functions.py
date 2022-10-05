@@ -43,7 +43,7 @@ def gain_from_doppler(doppler, incidence, radGeo: RadarGeometry, uniap: UniformA
     return G, maxg
 
 
-def AASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, prf, Bd, lambda_c, re=6371e3):
+def AASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, prf, Bd, lambda_c, re=6371e3, pbaroff=False):
     """
     returns the maximum expected Azimuth Ambiguity to signal ratio at the given incidence angle
     100 % processed doppler bandwidth is assumed
@@ -97,9 +97,9 @@ def AASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, prf, Bd, lamb
     # integrated denominator
     den = integrate.simps(den_g ** 2, D, axis=1)
     num = np.zeros_like(den)
-    print(den)
+    # print(den)
     # 2 numerator sum
-    for nn in tqdm(range(1, int(n + 1))):
+    for nn in tqdm(range(1, int(n + 1)), disable=pbaroff):
         #D, I = np.meshgrid(dop_ax, incidence_angle * np.pi / 180)
         # positive n
         num_g, maxg = gain_from_doppler(D + nn * prf, I, radGeo, uniap, lambda_c, v_s, h, aasr=True)
@@ -113,7 +113,7 @@ def AASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, prf, Bd, lamb
 
 
 # %%
-def RASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, PRI, Bd, lambda_c, v_s, h=500e3, c=299792458.0):
+def RASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, PRI, Bd, lambda_c, v_s, h=500e3, c=299792458.0, pbaroff=False):
     """
     Range ambiguity to signal ratio as per 6.5.20 in curlander
     :param radGeo: radar Geometry object
@@ -156,7 +156,7 @@ def RASR(radGeo: RadarGeometry, uniap: UniformAperture, incidence, PRI, Bd, lamb
     j = np.arange(-nN, nH)
     Numer = np.zeros_like(Denom)
     raxjj = np.zeros_like(Numer).astype('float64')
-    for jj in tqdm(j):
+    for jj in tqdm(j, disable=pbaroff):
         # 1 range axis
         raxjj = float(jj) * c * PRI / 2 + rax
         raxj = np.where(raxjj <= h, h, raxjj)
