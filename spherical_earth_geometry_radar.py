@@ -408,7 +408,7 @@ def incidence_angle_to_looking_angle(incidence_angle, h=500e3, re=6371e3):
     return np.arccos(cos_theta_l)
 
 
-def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidence, lambda_c, v_s, h=500e3,
+def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidence, lambda_c, v_s, h=500e3, Bd_scaling=1,
                        re=6371e3, c=299792458.0):
     """
 
@@ -429,6 +429,7 @@ def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidenc
     :param lambda_c: wavelength
     :param v_s: satellite orbital speed (circular orbit)
     :param h: optional, satellite height from ground, default 500 km
+    :param Bd_scaling: optional, default 1. increase or decrease the processed doppler bandwidth
     :param re: optional, spherical earth radius, default 6371 km
     :param c: optional, default speed of light
     :return:
@@ -444,7 +445,7 @@ def core_snr_spherical(radarGeo: RadarGeometry, uniap: UniformAperture, incidenc
     # print(theta_i*180/np.pi)
 
     # 1 Doppler Bandwidth
-    Bd = nominal_doppler_bandwidth(uniap.L, theta_i, lambda_c, v_s, h)
+    Bd = nominal_doppler_bandwidth(uniap.L, theta_i, lambda_c, v_s, h) * Bd_scaling
     # print(Bd)
     # print(v_s)
     # print(lambda_c)
