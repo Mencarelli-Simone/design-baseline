@@ -69,20 +69,26 @@ def range_transmit_event(n, dutycycle, prf, h=500e3, c=299792458):
     return transmits
 
 ## interface
-def time_diagram_plotter(ax, prf, dutycycle, h=500e3, re=6371e3, c=299792458):
+def time_diagram_plotter(ax, prf, dutycycle, h=500e3, re=6371e3, c=299792458, nadir=True, integrationtime=True):
     """
     plots a timing diagram over the given axis
-    :param ax: matplotlib axis
+        :param ax: matplotlib axis
     :param prf: pulse repetition frequency
     :param dutycycle: duty cycle of the radar
     :param h: satellite height
     :param re: earth radius
     :param c: optional default speed of light
+    :param nadir: if true a black line is plotted in correspondence of the nadir returns, default True
+    :param integrationtime: if true, the orange stripes (blind ranges) will also include the integration time for range compression, default True
     :return:
     """
-    nadir_return_plotter_rg(ax, h, prf[0], prf[-1], prf_resolution=5)
+    if nadir:
+        nadir_return_plotter_rg(ax, h, prf[0], prf[-1], prf_resolution=5)
     n = np.arange(0, 200)
-    transmit_events = range_transmit_event(n, dutycycle, prf)
+    if integrationtime:
+        transmit_events = range_transmit_event(n, dutycycle, prf)
+    else:
+        transmit_events = range_transmit_event(n, dutycycle / 2, prf)
     # conversion to ground range
     transmit_events_rg = []
     transmit_events_theta = []
